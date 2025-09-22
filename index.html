@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-container {
+            width: 90%;
+            max-width: 800px;
+            height: 80vh;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .chat-header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .chat-header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.bot {
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            line-height: 1.4;
+            white-space: pre-wrap; /* preserve newlines from AI responses */
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #e1e5e9;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .message-time {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e1e5e9;
+        }
+
+        .chat-input-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+        }
+
+        .send-button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 18px;
+            border-bottom-left-radius: 5px;
+            max-width: 70%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1000;
+        }
+
+        .status-online {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-offline {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 600px) {
+            .chat-container {
+                width: 95%;
+                height: 90vh;
+            }
+            
+            .message-content {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="status-indicator" id="statusIndicator">
+        <span id="statusText">Checking...</span>
+    </div>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🤖 AI Chatbot</h1>
+            <p>Ask me anything! I'm here to help.</p>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                <div class="message-content">
+                    👋 Hello! I'm your AI assistant. How can I help you today?
+                </div>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <form class="chat-input-form" id="chatForm">
+                <input 
+                    type="text" 
+                    class="chat-input" 
+                    id="messageInput" 
+                    placeholder="Type your message here..."
+                    autocomplete="off"
+                >
+                <button type="submit" class="send-button" id="sendButton">
+                    Send
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        class ChatBot {
+            constructor() {
+                this.chatMessages = document.getElementById('chatMessages');
+                this.messageInput = document.getElementById('messageInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.chatForm = document.getElementById('chatForm');
+                this.typingIndicator = document.getElementById('typingIndicator');
+                this.statusIndicator = document.getElementById('statusIndicator');
+                this.statusText = document.getElementById('statusText');
+                
+                this.init();
+            }
+
+            init() {
+                this.checkHealth();
+                this.setupEventListeners();
+                this.loadHistory();
+            }
+
+            async checkHealth() {
+                try {
+                    const response = await fetch('/api/health');
+                    const data = await response.json();
+                    
+                    if (data.status === 'healthy') {
+                        this.updateStatus('Online', 'status-online');
+                    } else {
+                        this.updateStatus('Offline', 'status-offline');
+                    }
+                } catch (error) {
+                    this.updateStatus('Offline', 'status-offline');
+                }
+            }
+
+            updateStatus(text, className) {
+                this.statusText.textContent = text;
+                this.statusIndicator.className = `status-indicator ${className}`;
+            }
+
+            setupEventListeners() {
+                this.chatForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.sendMessage();
+                });
+
+                this.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+            }
+
+            async sendMessage() {
+                const message = this.messageInput.value.trim();
+                if (!message) return;
+
+                // Add user message to chat
+                this.addMessage(message, 'user');
+                this.messageInput.value = '';
+                this.setLoading(true);
+
+                try {
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ message: message })
+                    });
+
+                    let data;
+                    const contentType = response.headers.get('content-type') || '';
+                    if (contentType.includes('application/json')) {
+                        data = await response.json();
+                    } else {
+                        const text = await response.text();
+                        data = { error: text };
+                    }
+
+                    if (response.ok && data && data.response) {
+                        this.addMessage(data.response, 'bot', data.timestamp);
+                    } else if (data && data.error) {
+                        this.addMessage(`Error: ${data.error}`, 'bot');
+                    } else {
+                        this.addMessage('Sorry, something went wrong.', 'bot');
+                    }
+                } catch (error) {
+                    this.addMessage('Sorry, I encountered an error. Please try again.', 'bot');
+                } finally {
+                    this.setLoading(false);
+                }
+            }
+
+            addMessage(content, sender, timestamp = null) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+
+                const messageContent = document.createElement('div');
+                messageContent.className = 'message-content';
+                messageContent.textContent = content;
+
+                messageDiv.appendChild(messageContent);
+
+                if (timestamp) {
+                    const timeDiv = document.createElement('div');
+                    timeDiv.className = 'message-time';
+                    timeDiv.textContent = new Date(timestamp).toLocaleTimeString();
+                    messageDiv.appendChild(timeDiv);
+                }
+
+                this.chatMessages.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+
+            setLoading(loading) {
+                this.sendButton.disabled = loading;
+                
+                if (loading) {
+                    this.typingIndicator.style.display = 'block';
+                    this.scrollToBottom();
+                } else {
+                    this.typingIndicator.style.display = 'none';
+                }
+            }
+
+            scrollToBottom() {
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+
+            async loadHistory() {
+                try {
+                    const response = await fetch('/api/history');
+                    const data = await response.json();
+
+                    if (response.ok && data.conversations.length > 0) {
+                        // Clear the welcome message
+                        this.chatMessages.innerHTML = '';
+                        
+                        // Add conversation history (reverse to show oldest first)
+                        data.conversations.reverse().forEach(conv => {
+                            this.addMessage(conv.user_message, 'user', conv.timestamp);
+                            this.addMessage(conv.bot_response, 'bot', conv.timestamp);
+                        });
+                    }
+                } catch (error) {
+                    console.log('Could not load history:', error);
+                }
+            }
+        }
+
+        // Initialize the chatbot when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new ChatBot();
+        });
+    </script>
+</body>
+</html>
