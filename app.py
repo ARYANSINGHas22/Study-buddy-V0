@@ -9,7 +9,7 @@ import sqlite3
 app = Flask(__name__)
 
 # Configuration - hardcoded for simplicity
-HARDCODED_GROQ_API_KEY = "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"  # Paste your key here
+HARDCODED_GROQ_API_KEY = ""  # Paste your key here
 GROQ_API_KEY = HARDCODED_GROQ_API_KEY
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 MODEL_NAME = "llama-3.1-8b-instant"
@@ -254,3 +254,4 @@ if __name__ == '__main__':
     
     # Run the app
     app.run(debug=True, host='0.0.0.0', port=5000)
+
